@@ -9,7 +9,25 @@ class Zadanie:
 		self.obszary = []
 		self.liczbaWymiarow = 2
 		
-		self.macierz = numpy.zeros((0,0))
+		# Macierz masowa
+		self.macierzM = [[]]	
+		# Macierz sztywnosci
+		self.macierzK = [[]]
+
+		#TODO: Ponizsze wartosci powinny byc wczytywane z pliku
+		
+		# Gestosc
+		self.p = 7.700000e+003
+		# Cieplo wlasciwe
+		self.c = 8.000000e+002
+		# Przewodzenie ciepla
+		self.l = 4.000000e+001
+		
+		# Aktualna temperatura
+		self.T = [[]]
+		
+		# Aktualny czas
+		self.t = 0
 
 	def wczytaj(self,plik): 
 	
@@ -55,6 +73,11 @@ class Zadanie:
 					tmp = [int(t[0])-1, int(t[1])-1]
 					self.brzegi.append(tmp)
 					
+	def wczytaj_warunki_poczatkowe(self,plik) :
+		#TODO: Wczytac warunki poczatkowe z pliku - na razie sa na sztywno
+		self.T = numpy.zeros((len(self.wspolrzedneWezlow), 1))
+		self.T += 600.0
+					
 	def wypisz(self) :
 		print('Wezly')
 		for w in self.wspolrzedneWezlow :
@@ -68,13 +91,17 @@ class Zadanie:
 		for w in self.brzegi :
 			print(w)
 			
-		print('Macierz')
-		print(self.macierz)
+		print('Macierz masowa')
+		print(self.macierzM)
+		
+		print('Macierz sztywnosci')
+		print(self.macierzM)
 		
 			
 	def utworz_macierz(self) :
 		liczba_wezlow = len(self.wspolrzedneWezlow)
-		self.macierz = numpy.zeros((liczba_wezlow, liczba_wezlow))
+		self.macierzM = numpy.zeros((liczba_wezlow, liczba_wezlow))
+		self.macierzK = numpy.zeros((liczba_wezlow, liczba_wezlow))
 		
 		for obszar in self.koneksje :
 			# Pole obszaru - ze wzoru na pole trojkata o danych wierzcholkach
@@ -89,14 +116,37 @@ class Zadanie:
 			for wezel1 in obszar :
 				for wezel2 in obszar :
 					if (wezel1 == wezel2) :
-						self.macierz[wezel1][wezel2] += a / 6.0
+						self.macierzM[wezel1][wezel2] += a / 6.0
 					else :
-						self.macierz[wezel1][wezel2] += a / 12.0
+						self.macierzM[wezel1][wezel2] += a / 12.0
+						
+					#TODO: Wypelnic takze macierzK
+					
+	
+						
+	def krok(self, dt) :
+		# dt - krok czasowy
+		self.t += dt
 		
+		# Uklad rownan w postaci Ax = B
+		A = self.macierzM
+				
+		a = self.l / (self.c * self.p)		
+		MK = self.macierzM - (self.macierzK*a*dt)		
+		B = numpy.matmul(MK, self.T)
+
+		x = numpy.linalg.solve(A, B)
+		self.T = x
+		
+		print("Temperatura po czasie " + str(self.t))
+		print(self.T)
 
 if __name__ == "__main__":
 
 	mes = Zadanie()
 	mes.wczytaj("test.msh")
-	mes.utworz_macierz()
+	mes.wczytaj_warunki_poczatkowe("test.ic")
+	mes.utworz_macierz()	
 	mes.wypisz()
+	
+	mes.krok(0.1)
