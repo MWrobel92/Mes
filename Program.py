@@ -28,7 +28,7 @@ class Zadanie:
 					tryb = 0
 				else:
 					t = l.split("  ")
-					tmp = [float(t[1]), float(t[2]), 0]
+					tmp = [float(t[1]), float(t[2])]
 					self.wspolrzedneWezlow.append(tmp)
 					
 			elif (tryb == 2) :
@@ -77,10 +77,21 @@ class Zadanie:
 		self.macierz = numpy.zeros((liczba_wezlow, liczba_wezlow))
 		
 		for obszar in self.koneksje :
+			# Pole obszaru - ze wzoru na pole trojkata o danych wierzcholkach
+			a1 = self.wspolrzedneWezlow[obszar[0]][0]
+			a2 = self.wspolrzedneWezlow[obszar[0]][1]
+			b1 = self.wspolrzedneWezlow[obszar[1]][0]
+			b2 = self.wspolrzedneWezlow[obszar[1]][1]
+			c1 = self.wspolrzedneWezlow[obszar[2]][0]
+			c2 = self.wspolrzedneWezlow[obszar[2]][1]
+			a = numpy.abs(a1*b2+b1*c2+c1*a2-c1*b2-a1*c2-b1*a2) / 2.0
+			
 			for wezel1 in obszar :
 				for wezel2 in obszar :
-					#TODO: Zamiast jedynki trzeba dodawac wartosc wyliczona z ktoregos wzoru
-					self.macierz[wezel1][wezel2] += 1
+					if (wezel1 == wezel2) :
+						self.macierz[wezel1][wezel2] += a / 6.0
+					else :
+						self.macierz[wezel1][wezel2] += a / 12.0
 		
 
 if __name__ == "__main__":
