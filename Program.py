@@ -78,7 +78,7 @@ class Zadanie:
 		self.T = numpy.zeros((len(self.wspolrzedneWezlow), 1))
 		self.T += 600.0
 		
-		#self.T[0] = 300.0
+		#self.T[0] = self.T[1]  = 300.0
 					
 	def wypisz(self) :
 		print('Wezly')
@@ -167,13 +167,21 @@ class Zadanie:
 				
 		a = self.l / (self.c * self.p)		
 		MK = self.macierzM - (self.macierzK*a*dt)
-		B = numpy.matmul(MK, self.T)
+		
+		# Uwzglednienie warunkow brzegowych
+		brzeg = numpy.zeros((len(self.wspolrzedneWezlow), 1))
+		
+		#TODO: Zrobic to automatycznie, zeby czytalo sie z pliku
+		t_otoczenia = 300.0
+		alfa = 1000.0		
+		brzeg[3] += dt * alfa * (1.0/6.0) * (-2*self.T[3] - self.T[4] + 3*t_otoczenia) / (self.c * self.p)
+		brzeg[4] += dt * alfa * (1.0/6.0) * (-2*self.T[4] - self.T[3] + 3*t_otoczenia) / (self.c * self.p)
+		
+		B = numpy.matmul(MK, self.T + brzeg)
+		
 
 		x = numpy.linalg.solve(A, B)
 		self.T = x
-		
-		print("Temperatura po czasie " + str(self.t))
-		print(self.T)
 
 if __name__ == "__main__":
 
@@ -183,5 +191,8 @@ if __name__ == "__main__":
 	mes.utworz_macierz()	
 	mes.wypisz()
 	
-	mes.krok(0.1)
-	mes.krok(0.1)
+	for i in range(1000) :
+		mes.krok(1)
+	
+	print("Temperatura po czasie " + str(mes.t))
+	print(mes.T)
