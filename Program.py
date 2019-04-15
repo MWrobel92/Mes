@@ -1,5 +1,18 @@
 from os.path import isfile
 import numpy
+
+class WarunekBrzegowyIII :
+	def __init__(self, w1, w2, temp, alfa):
+	
+		# Indeksy wezlow
+		self.w1 = w1
+		self.w2 = w2
+		
+		# Temperatura otoczenia
+		self.temp = temp
+		
+		# Wspolczynnik wymiany ciepla z otoczeniem
+		self.alfa = alfa
 	
 class Zadanie:
 	def __init__(self):
@@ -9,8 +22,10 @@ class Zadanie:
 		self.obszary = []
 		self.liczbaWymiarow = 2
 		
+		self.warunkiBrzegowe = []
+		
 		# Macierz masowa
-		self.macierzM = [[]]	
+		self.macierzM = [[]]    
 		# Macierz sztywnosci
 		self.macierzK = [[]]
 
@@ -79,6 +94,11 @@ class Zadanie:
 		self.T += 600.0
 		
 		#self.T[0] = self.T[1]  = 300.0
+		
+	def wczytaj_warunki_brzegowe(self, plik) :
+		#TODO: Wczytac warunki brzegowe z pliku - na razie sa na sztywno
+		b = WarunekBrzegowyIII(3, 4, 300.0, 1000.0)
+		self.warunkiBrzegowe.append(b)
 					
 	def wypisz(self) :
 		print('Wezly')
@@ -121,7 +141,7 @@ class Zadanie:
 			b2 = y[obszar[1]]
 			c1 = x[obszar[2]]
 			c2 = y[obszar[2]]
-			a = numpy.abs(a1*b2+b1*c2+c1*a2-c1*b2-a1*c2-b1*a2) / 2.0		
+			a = numpy.abs(a1*b2+b1*c2+c1*a2-c1*b2-a1*c2-b1*a2) / 2.0        
 			
 			for wezel1 in obszar :
 				for wezel2 in obszar :
@@ -137,7 +157,7 @@ class Zadanie:
 					
 					# Dla i oraz j trzeba znalezc indeksy sasiednich wezlow
 					# Przykladowo, jesli i = 2, to i_m_1 = 1 a  i+1 = 0 (bo doszlismy do konca tablicy) 
-					i_p_1 = (i+1) % len(obszar)					
+					i_p_1 = (i+1) % len(obszar)                 
 					i_m_1 = i-1
 					if i_m_1 < 0 :
 						i_m_1 = len(obszar)-1
@@ -145,17 +165,17 @@ class Zadanie:
 					j_p_1 = (j+1) % len(obszar)
 					j_m_1 = j-1
 					if j_m_1 < 0 :
-						j_m_1 = len(obszar)-1						
+						j_m_1 = len(obszar)-1                       
 						
 					# Obliczamy wartosci C
 					c2i = y[obszar[i_p_1]] - y[obszar[i_m_1]]
 					c2j = y[obszar[j_p_1]] - y[obszar[j_m_1]]
 					
-					c3i = x[obszar[i_m_1]] - x[obszar[i_p_1]]			
+					c3i = x[obszar[i_m_1]] - x[obszar[i_p_1]]           
 					c3j = x[obszar[j_m_1]] - x[obszar[j_p_1]]
 					
 					#Wypelniamy macierzK
-					self.macierzK[obszar[i]][obszar[j]] += (c2i*c2j + c3i*c3j) / (4.0 * a)				
+					self.macierzK[obszar[i]][obszar[j]] += (c2i*c2j + c3i*c3j) / (4.0 * a)              
 	
 						
 	def krok(self, dt) :
@@ -165,20 +185,17 @@ class Zadanie:
 		# Uklad rownan w postaci Ax = B
 		A = self.macierzM
 				
-		a = self.l / (self.c * self.p)		
+		a = self.l / (self.c * self.p)      
 		MK = self.macierzM - (self.macierzK*a*dt)
 		
 		# Uwzglednienie warunkow brzegowych
 		brzeg = numpy.zeros((len(self.wspolrzedneWezlow), 1))
 		
-		#TODO: Zrobic to automatycznie, zeby czytalo sie z pliku
-		t_otoczenia = 300.0
-		alfa = 1000.0		
-		brzeg[3] += dt * alfa * (1.0/6.0) * (-2*self.T[3] - self.T[4] + 3*t_otoczenia) / (self.c * self.p)
-		brzeg[4] += dt * alfa * (1.0/6.0) * (-2*self.T[4] - self.T[3] + 3*t_otoczenia) / (self.c * self.p)
+		for b in self.warunkiBrzegowe :    
+			brzeg[b.w1] += dt * b.alfa * (-2 * self.T[b.w1] - self.T[b.w2] + 3 * b.temp) / (6.0 * self.c * self.p)
+			brzeg[b.w2] += dt * b.alfa * (-2 * self.T[b.w2] - self.T[b.w1] + 3 * b.temp) / (6.0 * self.c * self.p)
 		
-		B = numpy.matmul(MK, self.T + brzeg)
-		
+		B = numpy.matmul(MK, self.T + brzeg)		
 
 		x = numpy.linalg.solve(A, B)
 		self.T = x
@@ -188,11 +205,12 @@ if __name__ == "__main__":
 	mes = Zadanie()
 	mes.wczytaj("test.msh")
 	mes.wczytaj_warunki_poczatkowe("test.ic")
-	mes.utworz_macierz()	
+	mes.wczytaj_warunki_brzegowe("test.bc")
+	mes.utworz_macierz()    
 	mes.wypisz()
 	
 	for i in range(1000) :
 		mes.krok(1)
 	
-	print("Temperatura po czasie " + str(mes.t))
+	print("Temperatura po czasie " + str(mes.t) + " s")
 	print(mes.T)
