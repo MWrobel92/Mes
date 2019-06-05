@@ -45,3 +45,5 @@ Format danych w tym pliku jest taki, ¿e jedna linia zawiera id danej w³aœciwoœci
 - 101 - gêstoœæ
 - 102 - ciep³o w³aœciwe
 - 103 - wspó³czynnik przewodzenia ciep³a
+
+101 0 - ostatnie zero oznacza dla ca³ego obszaru - dana nie u¿ywana (for later devop)
